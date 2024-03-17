@@ -328,7 +328,6 @@ void setup() {
   }
   repeat_time = millis()+repeat_delay;
   Serial.print("Woken Up\n");
-  blink_num(69);
 }
 
 void loop() {
