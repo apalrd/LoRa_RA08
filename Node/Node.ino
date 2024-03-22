@@ -1,24 +1,15 @@
-#define NUM_EVENTS 1
+uint32_t next_event;
+uint16_t event_counter;
+static const uint32_t event_delay = 1000*10;
 
-uint32_t next_event[NUM_EVENTS];
-uint16_t event_counter[NUM_EVENTS];
-static const uint32_t event_delay[NUM_EVENTS] = {
-    1000*10,
-//  1000*30,  /* 30sec sensor data */
-//  1000*69,  /* 69sec other sensor data */
-//  1000*300, /* 300sec important data */
-};
 /* Delay after bootup */
 static const uint32_t initial_delay = 1000*5;
 
 /* How often we request ack */
-static const uint8_t event_ack[NUM_EVENTS] = {30,};// 10, 1};
+static const uint8_t event_ack = 30;
 
 /* How many retries we should do */
-static const uint8_t event_retries[NUM_EVENTS] = {3};//2,3,4};
-
-/* Minimum delay between any two sends */
-static const uint32_t repeat_delay = 1000*10;
+static const uint8_t event_retries = 3;
 uint32_t repeat_time;
 
 /* Flag to echo messages */
@@ -27,7 +18,7 @@ static bool ra08_debug = true;
 /* Buffer size */
 #define RA08_BUF_SIZE 256
 
-/* Frequency (1-8) */
+/* Frequency (1-8) - note that some setups use 0-7 instead */
 #define RA08_FREQ 2
 
 /* Timeout to join and time delay after join */
@@ -291,19 +282,16 @@ void blink_num(int num)
   int ones = num - (tens * 10);
   for(int i = 0; i < tens; i++)
   {
-    Serial.write("BlinkOnTens\n");
     digitalWrite(pin_led,false);
     delay(blink_time_tens * 1000);
-    Serial.write("BlinkOffTens\n");
     digitalWrite(pin_led,true);
     delay(blink_off_tens * 1000);
   } 
+  //ones
   for(int i = 0; i < ones; i++)
   {
-    Serial.write("BlinkOnOnes\n");
     digitalWrite(pin_led,false);
     delay(blink_time * 1000);
-    Serial.write("BlinkOffOnes\n");
     digitalWrite(pin_led,true);
     delay(blink_off * 1000);
   }
@@ -313,6 +301,7 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
 
+  //Wait for the serial terminal to come up so we don't miss anything important
   for(int i = 0; i < 4; i++)
   {
     delay(1000);
@@ -321,50 +310,41 @@ void setup() {
 
   /* Setup RA08 and do initial join */
   ra08_init();
-  //Set next event two delays in the future
-  for(int i = 0; i < NUM_EVENTS; i++)
-  {
-    next_event[i] = millis()+initial_delay+1000*i*2;
-  }
-  repeat_time = millis()+repeat_delay;
-  Serial.print("Woken Up\n");
+  //Set next event in the futur
+  next_event = millis()+initial_delay;
 }
 
 void loop() {
 
   uint32_t now = millis();
-  for(int i = 0; i < NUM_EVENTS; i++)
+  //If time to do a transmit
+  if((now >= next_event))
   {
-    //If time to do a transmit
-    if((now >= next_event[i]) && (now >= repeat_time))
+    //Do it again in the future
+    next_event += event_delay;
+    
+    //Buffer for some chars
+    char atcmd[256];
+
+    /* Require Ack on some things */
+    int ack = (event_counter % event_ack) == 0;
+
+    /* Debug message only if sent with ack */
+    if(ack)
     {
-      //Do it again in the future
-      next_event[i] += event_delay[i];
-      /* Repeat time from now */
-      repeat_time = now + repeat_delay;
-
-      //Buffer for some chars
-      char atcmd[256];
-
-      /* Require Ack on some things */
-      int ack = (event_counter[i] % event_ack[i]) == 0;
-
-      /* Debug message only if sent with ack */
-      if(ack)
-      {
-        sprintf(atcmd,"DEBUG: Sending port %d data %d with ack\n",i+1,event_counter[i]);
-        Serial.write(atcmd);
-      }
-
-      /* Transmit */
-      uint16_t data = htons(event_counter[i]);
-      ra08_xmit(i+1,(char *)&data,2,event_retries[i],ack);
-
-      blink_num(event_counter[i]);
-
-      /* Increment counter */
-      event_counter[i]++;
+      sprintf(atcmd,"DEBUG: Sending port %d data %d with ack\n",1,event_counter);
+      Serial.write(atcmd);
     }
+
+    /* Transmit */
+    uint16_t data = htons(event_counter);
+    ra08_xmit(1,(char *)&data,2,event_retries,ack);
+
+    blink_num(event_counter);
+
+    /* Increment counter */
+    event_counter++;
   }
+  
   /* And now do it again */
 }
