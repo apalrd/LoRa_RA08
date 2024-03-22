@@ -1,0 +1,19 @@
+
+# Example configuration.yaml entry for Chirpstack sensors
+mqtt:
+  sensor:
+    - name: "Counter Value"
+      state_topic: "application/2d0bcf98-bf7a-4cb8-a0e0-501e453ebfb4/device/f287839aa2f574ca/event/up"
+      value_template: "{{ value_json.object.count }}"
+    - name: "Counter Float"
+      state_topic: "application/2d0bcf98-bf7a-4cb8-a0e0-501e453ebfb4/device/f287839aa2f574ca/event/up"
+      value_template: "{{ value_json.object.float }}"
+      unit_of_measurement: "%"
+    - name: "Counter RSSI"
+      state_topic: "application/2d0bcf98-bf7a-4cb8-a0e0-501e453ebfb4/device/f287839aa2f574ca/event/up"
+      value_template: "{{ value_json.rxInfo[0].rssi }}"
+      unit_of_measurement: "dB"
+    - name: "Counter SNR"
+      state_topic: "application/2d0bcf98-bf7a-4cb8-a0e0-501e453ebfb4/device/f287839aa2f574ca/event/up"
+      value_template: "{{ value_json.rxInfo[0].snr }}"
+      unit_of_measurement: "dB"
