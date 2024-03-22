@@ -322,7 +322,7 @@ void loop() {
   {
     //Do it again in the future
     next_event += event_delay;
-    
+
     //Buffer for some chars
     char atcmd[256];
 
@@ -340,7 +340,7 @@ void loop() {
     uint16_t data = htons(event_counter);
     ra08_xmit(1,(char *)&data,2,event_retries,ack);
 
-    blink_num(event_counter);
+    //blink_num(event_counter);
 
     /* Increment counter */
     event_counter++;
